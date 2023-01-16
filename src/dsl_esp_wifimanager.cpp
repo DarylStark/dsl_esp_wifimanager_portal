@@ -85,7 +85,7 @@ namespace dsl
             {
                 while (true)
                 {
-                    delay(5000);
+                    delay(3000);
 
                     // TODO: LOCK
 
