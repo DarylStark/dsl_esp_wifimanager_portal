@@ -1,0 +1,28 @@
+{
+    "name": "DSL ESP Wifi Manager",
+    "version": "0.0.1",
+    "description": "A DSL ESP application to connect to WiFi",
+    "keywords": "tools",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DarylStark/dsl_esp_wifimanager/"
+    },
+    "authors": [
+        {
+            "name": "Daryl Stark",
+            "email": "daryl@dstark.nl",
+            "url": "https://github.com/DarylStark"
+        }
+    ],
+    "flags": [
+        "-std=gnu++17"
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/DarylStark/dsl_esp_wifimanager/",
+    "dependencies": {
+        "dsl": "^0.0.1",
+        "dsl_esp_appbase": "^0.0.1"
+    },
+    "frameworks": "*",
+    "platforms": "*"
+}
