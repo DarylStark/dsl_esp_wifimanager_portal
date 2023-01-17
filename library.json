@@ -1,11 +1,11 @@
 {
-    "name": "DSL ESP Wifi Manager",
+    "name": "DSL ESP Wifi Manager Portal",
     "version": "0.0.1",
-    "description": "A DSL ESP application to connect to WiFi",
+    "description": "A DSL ESP web application to configure WiFi",
     "keywords": "tools",
     "repository": {
         "type": "git",
-        "url": "https://github.com/DarylStark/dsl_esp_wifimanager/"
+        "url": "https://github.com/DarylStark/dsl_esp_wifimanager_portal/"
     },
     "authors": [
         {
@@ -18,7 +18,7 @@
         "-std=gnu++17"
     ],
     "license": "MIT",
-    "homepage": "https://github.com/DarylStark/dsl_esp_wifimanager/",
+    "homepage": "https://github.com/DarylStark/dsl_esp_wifimanager_portal/",
     "dependencies": {
         "dsl": "^0.0.1",
         "dsl_esp_appbase": "^0.0.1"
