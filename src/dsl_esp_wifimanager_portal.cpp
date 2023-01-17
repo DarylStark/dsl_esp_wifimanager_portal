@@ -1,4 +1,4 @@
-#include "dsl_esp_wifimanager.h"
+#include "dsl_esp_wifimanager_portal.h"
 
 namespace dsl
 {
@@ -6,12 +6,12 @@ namespace dsl
     {
         namespace apps
         {
-            WiFiManager::WiFiManager(const std::string ap_ssid, unsigned long serial_baudrate /* = 9600 */)
+            WiFiManagerPortal::WiFiManagerPortal(const std::string ap_ssid, unsigned long serial_baudrate /* = 9600 */)
                 : __baudrate(serial_baudrate), __web_server(80), __ap_ssid(ap_ssid), __mode(Starting)
             {
             }
 
-            void WiFiManager::setup()
+            void WiFiManagerPortal::setup()
             {
                 // Start the Serial
                 Serial.begin(__baudrate);
@@ -66,7 +66,7 @@ namespace dsl
                 configure_for_scanning_mode();
             }
 
-            void WiFiManager::loop()
+            void WiFiManagerPortal::loop()
             {
                 if (__mode == ConnectPortal)
                 {
@@ -79,13 +79,13 @@ namespace dsl
                 delay(2000);
             }
 
-            void WiFiManager::configure_for_scanning_mode()
+            void WiFiManagerPortal::configure_for_scanning_mode()
             {
                 // Set the mode
                 __mode = ConnectPortal;
 
                 // Start the WiFi scanner
-                std::thread scan_thread(std::bind(&WiFiManager::update_wifi_list, this));
+                std::thread scan_thread(std::bind(&WiFiManagerPortal::update_wifi_list, this));
                 scan_thread.detach();
 
                 // Set the WiFi mode to AP
@@ -104,34 +104,34 @@ namespace dsl
                 __web_server.on(
                     "/generate_204",
                     HTTP_GET,
-                    std::bind(&WiFiManager::__web_root, this));
+                    std::bind(&WiFiManagerPortal::__web_root, this));
                 __web_server.on(
                     "/",
                     HTTP_GET,
-                    std::bind(&WiFiManager::__web_root, this));
+                    std::bind(&WiFiManagerPortal::__web_root, this));
                 __web_server.on(
                     "/api/network_list",
                     HTTP_GET,
-                    std::bind(&WiFiManager::__api_network_list, this));
+                    std::bind(&WiFiManagerPortal::__api_network_list, this));
                 __web_server.on(
                     "/api/save_network",
                     HTTP_POST,
-                    std::bind(&WiFiManager::__api_save_network, this));
+                    std::bind(&WiFiManagerPortal::__api_save_network, this));
                 __web_server.on(
                     "/api/clear_saved_networks",
                     HTTP_GET,
-                    std::bind(&WiFiManager::__api_clear_saved_networks, this));
+                    std::bind(&WiFiManagerPortal::__api_clear_saved_networks, this));
 
                 // Start the webserver
                 __web_server.begin();
             }
 
-            void WiFiManager::__web_root()
+            void WiFiManagerPortal::__web_root()
             {
                 __web_server.send(200, "text/json", "Empty page");
             }
 
-            void WiFiManager::__api_network_list()
+            void WiFiManagerPortal::__api_network_list()
             {
                 std::stringstream json_output;
                 json_output << "{";
@@ -156,7 +156,7 @@ namespace dsl
                 __web_server.send(200, "text/json", json_output.str().c_str());
             }
 
-            void WiFiManager::__api_save_network()
+            void WiFiManagerPortal::__api_save_network()
             {
                 String ssid = __web_server.arg("ssid");
                 String password = __web_server.arg("password");
@@ -208,14 +208,14 @@ namespace dsl
                 return;
             }
 
-            void WiFiManager::__api_clear_saved_networks()
+            void WiFiManagerPortal::__api_clear_saved_networks()
             {
                 __preferences.clear();
                 __web_server.send(200, "text/json", "{ \"cleard\": true }");
                 return;
             }
 
-            void WiFiManager::update_wifi_list()
+            void WiFiManagerPortal::update_wifi_list()
             {
                 while (true)
                 {

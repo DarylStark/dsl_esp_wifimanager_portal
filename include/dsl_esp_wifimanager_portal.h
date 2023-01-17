@@ -29,7 +29,7 @@ namespace dsl
                 std::string password;
             };
 
-            class WiFiManager : public AppBase
+            class WiFiManagerPortal : public AppBase
             {
             public:
                 enum ManagerMode
@@ -57,7 +57,7 @@ namespace dsl
                 void __api_clear_saved_networks();
 
             public:
-                WiFiManager(const std::string ap_ssid, unsigned long serial_baudrate = 9600);
+                WiFiManagerPortal(const std::string ap_ssid, unsigned long serial_baudrate = 9600);
                 void setup();
                 void loop();
 
