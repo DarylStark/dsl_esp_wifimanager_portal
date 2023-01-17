@@ -8,6 +8,7 @@
 #include <list>
 #include <sstream>
 #include <thread>
+#include <mutex>
 #include <dsl_esp_appbase.h>
 
 namespace dsl
@@ -32,9 +33,11 @@ namespace dsl
                 std::list<WiFiNetwork> __networks;
                 WebServer __web_server;
                 std::string __ap_ssid;
-                unsigned long __last_scan;
+                std::mutex __wifi_lock;
+                std::mutex __ssid_list_lock;
 
                 void __api_network_list();
+                void __api_save_network();
 
             public:
                 WiFiManager(const std::string ap_ssid, unsigned long serial_baudrate = 9600);

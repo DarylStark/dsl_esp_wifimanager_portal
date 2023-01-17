@@ -7,7 +7,7 @@ namespace dsl
         namespace apps
         {
             WiFiManager::WiFiManager(const std::string ap_ssid, unsigned long serial_baudrate /* = 9600 */)
-                : __baudrate(serial_baudrate), __web_server(80), __ap_ssid(ap_ssid), __last_scan(0)
+                : __baudrate(serial_baudrate), __web_server(80), __ap_ssid(ap_ssid)
             {
             }
 
@@ -44,6 +44,7 @@ namespace dsl
                 WiFi.mode(WIFI_AP_STA);
 
                 // Configure the Access Point
+                WiFi.setHostname("DSL_ESP_WifiManager");
                 WiFi.softAP(__ap_ssid.c_str(), NULL);
 
                 // Configure the webserver
@@ -51,6 +52,10 @@ namespace dsl
                     "/api/network_list",
                     HTTP_GET,
                     std::bind(&WiFiManager::__api_network_list, this));
+                __web_server.on(
+                    "/api/save_network",
+                    HTTP_POST,
+                    std::bind(&WiFiManager::__api_save_network, this));
 
                 // Start the webserver
                 __web_server.begin();
@@ -58,6 +63,8 @@ namespace dsl
 
             void WiFiManager::__api_network_list()
             {
+                std::lock_guard<std::mutex> lock(std::mutex __ssid_list_lock);
+
                 std::stringstream json_output;
                 json_output << "{";
                 json_output << "\"networks\": [";
@@ -81,22 +88,50 @@ namespace dsl
                 __web_server.send(200, "text/json", json_output.str().c_str());
             }
 
+            void WiFiManager::__api_save_network()
+            {
+                std::lock_guard<std::mutex> lock(__wifi_lock);
+                String ssid = __web_server.arg("ssid");
+                String password = __web_server.arg("password");
+
+                // Test the WiFi connection. Connection should be done within
+                // 10 seconds or it will fail
+                WiFi.begin(ssid.c_str(), password.c_str());
+                // TODO: Make connection-timeout configurable
+                WiFi.waitForConnectResult(10000);
+
+                if (WiFi.isConnected())
+                {
+                    __web_server.send(200, "text/json", "{ \"connected\": true }");
+                    WiFi.disconnect();
+
+                    // TODO: Save credentials
+                    return;
+                }
+
+                // Couldn't connect
+                __web_server.send(200, "text/json", "{ \"connected\": false }");
+                return;
+            }
+
             void WiFiManager::update_wifi_list()
             {
+                delay(3000);
                 while (true)
                 {
-                    delay(3000);
+                    // Set WiFi count to zero. We increase it later to the
+                    // number of WiFi networks
+                    uint16_t ssid_count = 0;
+                    {
+                        std::lock_guard<std::mutex> lock(__wifi_lock);
 
-                    // TODO: LOCK
+                        // Get the WiFi networks
+                        ssid_count = WiFi.scanNetworks(false, true);
+                        WiFi.mode(WIFI_AP_STA);
+                    };
 
-                    // Clean up
-                    WiFi.scanDelete();
-
-                    // Get the WiFi networks
-                    uint16_t ssid_count = WiFi.scanNetworks(false, true);
-                    WiFi.mode(WIFI_AP_STA);
+                    std::lock_guard<std::mutex> lock(std::mutex __ssid_list_lock);
                     __networks.clear();
-
                     for (uint16_t ssid_id = 0; ssid_id < ssid_count; ssid_id++)
                     {
                         __networks.push_back(
@@ -106,6 +141,8 @@ namespace dsl
                              WiFi.RSSI(ssid_id),
                              WiFi.encryptionType(ssid_id)});
                     }
+
+                    delay(3000);
                 }
             }
         };
