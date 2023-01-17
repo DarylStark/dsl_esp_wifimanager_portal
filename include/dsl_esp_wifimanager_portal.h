@@ -1,5 +1,5 @@
-#ifndef __DSL_ESP_WIFIMANAGER_H__
-#define __DSL_ESP_WIFIMANAGER_H__
+#ifndef __DSL_ESP_WIFIMANAGER_PORTAL_H__
+#define __DSL_ESP_WIFIMANAGER_PORTAL_H__
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -70,4 +70,4 @@ namespace dsl
     };
 };
 
-#endif /* __DSL_ESP_WIFIMANAGER_H__ */
+#endif /* __DSL_ESP_WIFIMANAGER_PORTAL_H__ */
