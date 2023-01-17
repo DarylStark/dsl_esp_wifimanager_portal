@@ -7,7 +7,7 @@ namespace dsl
         namespace apps
         {
             WiFiManagerPortal::WiFiManagerPortal(const std::string ap_ssid, unsigned long serial_baudrate /* = 9600 */)
-                : __baudrate(serial_baudrate), __web_server(80), __ap_ssid(ap_ssid), __mode(Starting)
+                : __baudrate(serial_baudrate), __web_server(80), __ap_ssid(ap_ssid), __mode(Starting), __wifi_manager("dslespwifi")
             {
             }
 
@@ -16,36 +16,39 @@ namespace dsl
                 // Start the Serial
                 Serial.begin(__baudrate);
 
-                // Start the Preferences library
-                __preferences.begin("wifimanager");
+                __mode = Setup;
 
                 // Start the setup for
                 _setup();
 
-                // Get saved WiFi networks from the flash
-                uint16_t wifi_count = __preferences.getUInt("count", 0);
-                for (uint16_t i = 0; i < wifi_count; ++i)
-                {
-                    std::stringstream field_ssid;
-                    field_ssid << "ssid_" << i;
-                    std::stringstream field_password;
-                    field_password << "password_" << i;
-                    std::string ssid = __preferences.getString(field_ssid.str().c_str()).c_str();
-                    std::string password = __preferences.getString(field_password.str().c_str()).c_str();
+                // Start connecting
+                setup_connecting();
 
-                    if (ssid.length() > 0)
-                    {
-                        WiFiNetwork network;
-                        network.ssid = ssid;
-                        network.password = password;
-                        __known_networks.emplace_back(network);
-                    }
+                // Setup for portal
+                if (__mode != Connected)
+                    setup_portal();
+            }
+
+            void WiFiManagerPortal::loop()
+            {
+                if (__mode == Portal)
+                {
+                    loop_portal();
+                    return;
                 }
+                loop_connecting();
+            }
 
-                for (const auto &network : __known_networks)
+            void WiFiManagerPortal::setup_connecting()
+            {
+                __mode = Connecting;
+
+                Serial.println("Setting up connection mode");
+
+                __wifi_manager.load();
+                for (const auto &network : __wifi_manager.get_wifi_list())
                 {
-                    Serial.print("Connecting to network ");
-                    Serial.println(network.ssid.c_str());
+                    Serial.printf("Connecting to network \"%s\" ... ", network.ssid.c_str());
 
                     __mode = Connecting;
 
@@ -60,38 +63,29 @@ namespace dsl
                         Serial.println("CONNECTED!");
                         return;
                     }
+                    Serial.println("FAILED!");
                 }
-
-                // Configure for scanning
-                configure_for_scanning_mode();
             }
 
-            void WiFiManagerPortal::loop()
+            void WiFiManagerPortal::loop_connecting()
             {
-                if (__mode == ConnectPortal)
-                {
-                    _loop();
-                    __web_server.handleClient();
-                    __dns_server.processNextRequest();
-                    delay(20);
-                    return;
-                }
-                delay(2000);
             }
 
-            void WiFiManagerPortal::configure_for_scanning_mode()
+            void WiFiManagerPortal::setup_portal()
             {
-                // Set the mode
-                __mode = ConnectPortal;
+                __mode = Portal;
 
-                // Start the WiFi scanner
-                std::thread scan_thread(std::bind(&WiFiManagerPortal::update_wifi_list, this));
+                Serial.println("Setting up portal mode");
+
+                // Start the WiFi scanner in different thread
+                std::thread scan_thread(std::bind(&WiFiManagerPortal::scan_thread, this));
                 scan_thread.detach();
 
                 // Set the WiFi mode to AP
                 WiFi.mode(WIFI_AP_STA);
 
                 // Configure the Access Point
+                // TODO: Make configurable
                 WiFi.setHostname("DSL_ESP_WifiManager");
 
                 // Start the AP
@@ -126,9 +120,15 @@ namespace dsl
                 __web_server.begin();
             }
 
+            void WiFiManagerPortal::loop_portal()
+            {
+                __dns_server.processNextRequest();
+                __web_server.handleClient();
+            }
+
             void WiFiManagerPortal::__web_root()
             {
-                __web_server.send(200, "text/json", "Empty page");
+                __web_server.send(200, "text/html", "Empty page");
             }
 
             void WiFiManagerPortal::__api_network_list()
@@ -161,19 +161,11 @@ namespace dsl
                 String ssid = __web_server.arg("ssid");
                 String password = __web_server.arg("password");
 
-                // Check if this network is already known
-                for (const auto &network : __known_networks)
-                {
-                    if (network.ssid == ssid.c_str())
-                    {
-                        __web_server.send(200, "text/json", "{ \"saved\": false, \"reason\": 1 }");
-                        return;
-                    }
-                }
-
-                std::lock_guard<std::mutex> lock(__wifi_lock);
                 // Test the WiFi connection. Connection should be done within
                 // 10 seconds or it will fail
+                std::lock_guard<std::mutex> lock(__wifi_lock);
+
+                Serial.printf("Connecting to %s with password %s ... ", ssid.c_str(), password.c_str());
                 WiFi.begin(ssid.c_str(), password.c_str());
                 // TODO: Make connection-timeout configurable
                 WiFi.waitForConnectResult(10000);
@@ -183,25 +175,16 @@ namespace dsl
                     // Could connect to this WiFi successfully
                     WiFi.disconnect();
 
-                    // Add network to known networks
-                    WiFiNetwork network;
-                    network.ssid = ssid.c_str();
-                    network.password = password.c_str();
-                    __known_networks.emplace_back(network);
+                    Serial.println("CONNECTED");
 
-                    // Save credentials to flash
-                    std::stringstream field_ssid;
-                    uint16_t index = __known_networks.size() - 1;
-                    field_ssid << "ssid_" << index;
-                    std::stringstream field_password;
-                    field_password << "password_" << index;
-                    __preferences.putUInt("count", __known_networks.size());
-                    __preferences.putString(field_ssid.str().c_str(), ssid);
-                    __preferences.putString(field_password.str().c_str(), password);
-
+                    // Save the network
+                    __wifi_manager.set(std::string(ssid.c_str()), std::string(password.c_str()));
+                    __wifi_manager.save();
                     __web_server.send(200, "text/json", "{ \"saved\": true, \"reason\": 0 }");
                     return;
                 }
+
+                Serial.println("FAILED");
 
                 // Couldn't connect
                 __web_server.send(200, "text/json", "{ \"saved\": false, \"reason\": 0 }");
@@ -210,41 +193,43 @@ namespace dsl
 
             void WiFiManagerPortal::__api_clear_saved_networks()
             {
-                __preferences.clear();
+                __wifi_manager.clear();
                 __web_server.send(200, "text/json", "{ \"cleard\": true }");
                 return;
             }
 
-            void WiFiManagerPortal::update_wifi_list()
+            void WiFiManagerPortal::scan_thread()
             {
+                delay(3000);
                 while (true)
                 {
-                    // TODO: Make interval configurable
-                    delay(5000);
                     // Set WiFi count to zero. We increase it later to the
                     // number of WiFi networks
                     uint16_t ssid_count = 0;
+                    Serial.println("Scanning WiFi");
+
+                    // Get the WiFi networks
                     {
                         std::lock_guard<std::mutex> lock(__wifi_lock);
-                        Serial.println("Scanning WiFi");
-
-                        // Get the WiFi networks
                         ssid_count = WiFi.scanNetworks(false, true);
                         WiFi.mode(WIFI_AP_STA);
-                        Serial.println("Scanning WiFi is done");
-                    };
+                    }
+                    Serial.println("Scanning WiFi is done");
 
                     __networks.clear();
                     for (uint16_t ssid_id = 0; ssid_id < ssid_count; ssid_id++)
                     {
                         __networks.push_back(
                             {WiFi.SSID(ssid_id).c_str(),
+                             "",
                              WiFi.BSSIDstr(ssid_id).c_str(),
                              WiFi.channel(ssid_id),
                              WiFi.RSSI(ssid_id),
-                             WiFi.encryptionType(ssid_id),
-                             ""});
+                             WiFi.encryptionType(ssid_id)});
                     }
+
+                    // TODO: Make interval configurable
+                    delay(5000);
                 }
             }
 

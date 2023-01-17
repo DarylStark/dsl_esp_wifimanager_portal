@@ -10,8 +10,8 @@
 #include <sstream>
 #include <thread>
 #include <mutex>
-#include <Preferences.h>
 #include <dsl_esp_appbase.h>
+#include <dsl_esp_wifimanager.h>
 
 namespace dsl
 {
@@ -19,14 +19,12 @@ namespace dsl
     {
         namespace apps
         {
-            struct WiFiNetwork
+            struct ScannedNetwork : public dsl::esp::connections::WiFiNetwork
             {
-                std::string ssid;
                 std::string bssid;
                 int32_t channel;
                 int32_t rssi;
                 uint16_t encryption;
-                std::string password;
             };
 
             class WiFiManagerPortal : public AppBase
@@ -35,21 +33,21 @@ namespace dsl
                 enum ManagerMode
                 {
                     Starting,
-                    ConnectPortal,
+                    Setup,
                     Connecting,
-                    Connected
+                    Connected,
+                    Portal
                 };
 
             private:
                 unsigned long __baudrate;
-                std::list<WiFiNetwork> __networks;
-                std::list<WiFiNetwork> __known_networks;
+                std::list<ScannedNetwork> __networks;
                 WebServer __web_server;
                 DNSServer __dns_server;
                 std::string __ap_ssid;
-                std::mutex __wifi_lock;
-                Preferences __preferences;
                 ManagerMode __mode;
+                dsl::esp::connections::WiFiManager __wifi_manager;
+                std::mutex __wifi_lock;
 
                 void __web_root();
                 void __api_network_list();
@@ -61,8 +59,12 @@ namespace dsl
                 void setup();
                 void loop();
 
-                void configure_for_scanning_mode();
-                void update_wifi_list();
+                void setup_connecting();
+                void loop_connecting();
+
+                void setup_portal();
+                void loop_portal();
+                void scan_thread();
 
                 uint16_t get_status() const;
             };
