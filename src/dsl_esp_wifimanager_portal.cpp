@@ -52,7 +52,7 @@ namespace dsl
                     // Connect to the network
                     WiFi.begin(network.ssid.c_str(), network.password.c_str());
                     // TODO: Make this timeout configurable
-                    WiFi.waitForConnectResult(10000);
+                    WiFi.waitForConnectResult(20000);
 
                     if (WiFi.isConnected())
                     {
@@ -246,6 +246,11 @@ namespace dsl
                              ""});
                     }
                 }
+            }
+
+            WiFiManagerPortal::ManagerMode WiFiManagerPortal::get_mode() const
+            {
+                return __mode;
             }
         };
     };
