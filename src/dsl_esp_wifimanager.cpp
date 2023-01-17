@@ -31,6 +31,8 @@ namespace dsl
                 _loop();
 
                 __web_server.handleClient();
+                __dns_server.processNextRequest();
+
                 delay(20);
             }
 
@@ -45,9 +47,22 @@ namespace dsl
 
                 // Configure the Access Point
                 WiFi.setHostname("DSL_ESP_WifiManager");
+
+                // Start the AP
                 WiFi.softAP(__ap_ssid.c_str(), NULL);
 
+                // Start the DNS server
+                __dns_server.start(53, "*", WiFi.softAPIP());
+
                 // Configure the webserver
+                __web_server.on(
+                    "/generate_204",
+                    HTTP_GET,
+                    std::bind(&WiFiManager::__web_root, this));
+                __web_server.on(
+                    "/",
+                    HTTP_GET,
+                    std::bind(&WiFiManager::__web_root, this));
                 __web_server.on(
                     "/api/network_list",
                     HTTP_GET,
@@ -59,6 +74,11 @@ namespace dsl
 
                 // Start the webserver
                 __web_server.begin();
+            }
+
+            void WiFiManager::__web_root()
+            {
+                __web_server.send(200, "text/json", "Empty page");
             }
 
             void WiFiManager::__api_network_list()

@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <DNSServer.h>
 #include <string>
 #include <list>
 #include <sstream>
@@ -32,10 +33,12 @@ namespace dsl
                 unsigned long __baudrate;
                 std::list<WiFiNetwork> __networks;
                 WebServer __web_server;
+                DNSServer __dns_server;
                 std::string __ap_ssid;
                 std::mutex __wifi_lock;
                 std::mutex __ssid_list_lock;
 
+                void __web_root();
                 void __api_network_list();
                 void __api_save_network();
 
