@@ -248,7 +248,7 @@ namespace dsl
                 }
             }
 
-            WiFiManagerPortal::ManagerMode WiFiManagerPortal::get_mode() const
+            uint16_t WiFiManagerPortal::get_status() const
             {
                 return __mode;
             }

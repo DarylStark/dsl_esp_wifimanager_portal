@@ -64,7 +64,7 @@ namespace dsl
                 void configure_for_scanning_mode();
                 void update_wifi_list();
 
-                ManagerMode get_mode() const;
+                uint16_t get_status() const;
             };
         };
     };
