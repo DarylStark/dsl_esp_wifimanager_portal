@@ -117,6 +117,7 @@ namespace dsl
             void WiFiManager::update_wifi_list()
             {
                 delay(3000);
+
                 while (true)
                 {
                     // Set WiFi count to zero. We increase it later to the
@@ -141,8 +142,6 @@ namespace dsl
                              WiFi.RSSI(ssid_id),
                              WiFi.encryptionType(ssid_id)});
                     }
-
-                    delay(3000);
                 }
             }
         };
