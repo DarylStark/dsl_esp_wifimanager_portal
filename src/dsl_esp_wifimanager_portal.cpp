@@ -121,6 +121,10 @@ namespace dsl
                     "/api/saved_network_list",
                     HTTP_GET,
                     std::bind(&WiFiManagerPortal::__api_saved_network_list, this));
+                __web_server.on(
+                    "/api/delete_network",
+                    HTTP_DELETE,
+                    std::bind(&WiFiManagerPortal::__api_delete_network, this));
 
                 // TODO: Endpoint for known networks
 
@@ -226,7 +230,17 @@ namespace dsl
             void WiFiManagerPortal::__api_clear_saved_networks()
             {
                 __wifi_manager.clear();
+                __wifi_manager.save();
                 __web_server.send(200, "text/json", "{ \"cleard\": true }");
+                return;
+            }
+
+            void WiFiManagerPortal::__api_delete_network()
+            {
+                std::string ssid = __web_server.arg("ssid").c_str();
+                __wifi_manager.remove(ssid);
+                __wifi_manager.save();
+                __web_server.send(200, "text/json", "{ \"deleted\": true }");
                 return;
             }
 

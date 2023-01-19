@@ -54,6 +54,7 @@ namespace dsl
                 void __api_saved_network_list();
                 void __api_save_network();
                 void __api_clear_saved_networks();
+                void __api_delete_network();
 
             public:
                 WiFiManagerPortal(const std::string ap_ssid, unsigned long serial_baudrate = 9600);
