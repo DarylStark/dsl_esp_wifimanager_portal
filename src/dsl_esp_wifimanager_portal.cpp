@@ -94,6 +94,8 @@ namespace dsl
                 // Start the DNS server
                 __dns_server.start(53, "*", WiFi.softAPIP());
 
+                // TODO: Rename API endpoints
+
                 // Configure the webserver
                 __web_server.on(
                     "/generate_204",
@@ -115,6 +117,8 @@ namespace dsl
                     "/api/clear_saved_networks",
                     HTTP_GET,
                     std::bind(&WiFiManagerPortal::__api_clear_saved_networks, this));
+
+                // TODO: Endpoint for known networks
 
                 // Start the webserver
                 __web_server.begin();
@@ -187,6 +191,7 @@ namespace dsl
                 Serial.println("FAILED");
 
                 // Couldn't connect
+                // TODO: Error code as return code
                 __web_server.send(200, "text/json", "{ \"saved\": false, \"reason\": 0 }");
                 return;
             }
