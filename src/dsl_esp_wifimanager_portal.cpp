@@ -9,6 +9,8 @@ namespace dsl
             WiFiManagerPortal::WiFiManagerPortal(const std::string ap_ssid, unsigned long serial_baudrate /* = 9600 */)
                 : __baudrate(serial_baudrate), __web_server(80), __ap_ssid(ap_ssid), __mode(Starting), __wifi_manager("dslespwifi")
             {
+                // TODO: Make sure the portal gets restarted after a few seconds
+                //       when there is WiFi in the remembered WiFi list
             }
 
             void WiFiManagerPortal::setup()
