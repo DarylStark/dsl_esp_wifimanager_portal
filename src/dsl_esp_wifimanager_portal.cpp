@@ -117,6 +117,10 @@ namespace dsl
                     "/api/clear_saved_networks",
                     HTTP_GET,
                     std::bind(&WiFiManagerPortal::__api_clear_saved_networks, this));
+                __web_server.on(
+                    "/api/saved_network_list",
+                    HTTP_GET,
+                    std::bind(&WiFiManagerPortal::__api_saved_network_list, this));
 
                 // TODO: Endpoint for known networks
 
@@ -152,6 +156,29 @@ namespace dsl
                     json_output << "\"encryption\": " << network.encryption << "";
                     json_output << "}";
                     if (++cnt < __networks.size())
+                        json_output << ",";
+                }
+
+                json_output << "]";
+                json_output << "}";
+                __web_server.send(200, "text/json", json_output.str().c_str());
+            }
+
+            void WiFiManagerPortal::__api_saved_network_list()
+            {
+                std::stringstream json_output;
+                json_output << "{";
+                json_output << "\"saved_networks\": [";
+                uint16_t cnt = 0;
+
+                const auto &networks = __wifi_manager.get_wifi_list();
+
+                for (const auto &network : networks)
+                {
+                    json_output << "{";
+                    json_output << "\"ssid\": \"" << network.ssid << "\"";
+                    json_output << "}";
+                    if (++cnt < networks.size())
                         json_output << ",";
                 }
 

@@ -51,6 +51,7 @@ namespace dsl
 
                 void __web_root();
                 void __api_network_list();
+                void __api_saved_network_list();
                 void __api_save_network();
                 void __api_clear_saved_networks();
 
